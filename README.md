@@ -4,8 +4,9 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 This is just a VERY quick prototype of a video room using React and Janus Media Server.
 
-Important Note:
+#####Important Note:
 It has been directly merged reusing most of the code from the Janus video room [demo](https://github.com/meetecho/janus-gateway/blob/master/html/videoroomtest.js), including jQuery!
+
 Next step will be to refactor it to use React full potential, fix multiple bugs when connecting/reconnecting participants and get rid of jQuery.
 
 ## Available Scripts
