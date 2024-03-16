@@ -29,6 +29,9 @@
       "react-app/jest"
     ]
   },
+  "engines": {
+    "node": ">=14 <=16"
+  },  
   "browserslist": {
     "production": [
       ">0.2%",
