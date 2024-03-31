@@ -4,9 +4,10 @@ import '../App.css';
 import offline from "../images/offline.jpg";
 import Janus from './Janus';
 import $ from 'jquery';
+import ToggleSwitch from './ToggleSwitch';
 import {Container, Row, Col} from 'react-bootstrap'
 
-const server = process.env.REACT_APP_JANUS_URL || "http://localhost:8088/janus";
+const server = process.env.REACT_APP_JANUS_URL || "http://35.180.214.15:8088/janus";
 const opaqueId = "videoroom-"+Janus.randomString(12);
 
 let janusRoom = null;
@@ -48,11 +49,33 @@ class Room extends React.Component {
             // Publish our stream
             vroomHandle.createOffer(
                 {
-                    media: { audioRecv: false, videoRecv: false, audioSend: useAudio, videoSend: true },	// Publishers are sendonly
+                    tracks: [
+                        { type: 'audio', capture: useAudio, recv: false },
+                        { type: 'video', capture: true, recv: false,
+                            // We may need to enable simulcast or SVC on the video track
+                            simulcast: false,
+                            // We only support SVC for VP9 and (still WIP) AV1
+                            svc: false
+                        },
+                        { type: 'data' },
+                    ],	// Publishers are sendonly
+                    customizeSdp: function(jsep) {
+                        // let sdp = jsep.sdp;
+                        // // Regex pattern to match the PCMU audio codec with 8000
+                        // const pcmuPattern = /^(a=rtpmap:0 PCMU\/)8000(\r?\n)/gm;
+
+                        // // Replace the PCMU audio codec with the modified version
+                        // sdp = sdp.replace(pcmuPattern, (match, p1, p2) => {
+                        //     return `${p1}16000${p2}`;
+                        // });
+
+                        // console.log(sdp); // Output the modified SDP
+                        // jsep.sdp = sdp;
+                    },
                     success: function(jsep) {
                         Janus.debug("Got publisher SDP!");
                         Janus.debug(jsep);
-                        const publish = { "request": "configure", "audio": useAudio, "video": true };
+                        const publish = { "request": "configure", "audio": useAudio, "audiocodec": "pcmu", "video": true, "bitrate": 300000 };
                         vroomHandle.send({"message": publish, "jsep": jsep});
                     },
                     error: function(error) {
@@ -254,9 +277,13 @@ class Room extends React.Component {
                             remoteFeed.createAnswer(
                                 {
                                     jsep: jsep,
-                                    // Add data:true here if you want to subscribe to datachannels as well
-                                    // (obviously only works if the publisher offered them in the first place)
-                                    media: { audioSend: false, videoSend: false },	// We want recvonly audio/video
+                                    // We only specify data channels here, as this way in
+							        // case they were offered we'll enable them. Since we
+							        // don't mention audio or video tracks, we autoaccept them
+							        // as recvonly (since we won't capture anything ourselves)
+                                    tracks: [
+                                        { type: 'data' }
+                                    ],
                                     success: function(jsep) {
                                         Janus.debug("Got SDP!", jsep);
                                         let body = { request: "start", room: myroom };
@@ -367,6 +394,10 @@ class Room extends React.Component {
                                 }, 1000);
                             }
                         }
+                    },
+                    ondata: function(data) {
+                        Janus.debug("We got data from the DataChannel!!!!", data);
+                        console.log(data);
                     },
                     oncleanup: function() {
                         Janus.log(" ::: Got a cleanup notification (remote feed) :::");
@@ -636,7 +667,11 @@ class Room extends React.Component {
                                             return;
                                         }
                                         if(track.kind === "audio") {
-                                            // We ignore local audio tracks, they'd generate echo anyway
+                                            // Set audio constraints for ideal speech to text
+                                            const constraints = { sampleRate : { ideal: 16000 }, frameRate: { min: 10, max: 15 }, 
+                                            echoCancellation: false, autoGainControl: false, noiseSuppression: false }
+                                            track.applyConstraints(constraints);
+                                            console.log(constraints)
                                         } else {
                                             // New video track: create a stream out of it
                                             localVideos++;
@@ -651,6 +686,10 @@ class Room extends React.Component {
                                         vroomHandle.webrtcStuff.pc.iceConnectionState !== "connected") {
                                             Janus.log(`Publishing...`)
                                         }
+                                    },
+                                    ondata: function(data) {
+                                        Janus.debug("We got data from the DataChannel!", data);
+                                        console.log(data);
                                     },
                                     oncleanup: function () {
                                         Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
@@ -695,6 +734,9 @@ class Room extends React.Component {
                         {/*<div className="panel-body" id="videolocal"></div>*/}
                     </div>
                 </header>
+                <div className="center">
+                <ToggleSwitch />
+                </div>
                 <h3 id="title"></h3>
                 <Container>
                     <Row>
