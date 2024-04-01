@@ -7,7 +7,7 @@ import $ from 'jquery';
 import ToggleSwitch from './ToggleSwitch';
 import {Container, Row, Col} from 'react-bootstrap'
 
-const server = process.env.REACT_APP_JANUS_URL || "http://35.180.214.15:8088/janus";
+const server = process.env.REACT_APP_JANUS_URL || "http://localhost:8088/janus";
 const opaqueId = "videoroom-"+Janus.randomString(12);
 
 let janusRoom = null;
@@ -723,11 +723,6 @@ class Room extends React.Component {
     handleToggle(isChecked){
         const data = `${isChecked ? 'start' : 'stop'} real time transcription`;
         console.log('Toggle switch is now:', isChecked ? 'ON' : 'OFF');
-        // remoteFeed.data({
-        //     text: data,
-        //     error: function(reason) { alert(reason); },
-        //     success: function() { console.log('Sent successfully!'); },
-        // });
         vroomHandle.data({
             text: data,
             error: function(reason) { alert(reason); },
