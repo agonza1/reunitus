@@ -720,6 +720,21 @@ class Room extends React.Component {
         }
     };
 
+    handleToggle(isChecked){
+        const data = `${isChecked ? 'start' : 'stop'} real time transcription`;
+        console.log('Toggle switch is now:', isChecked ? 'ON' : 'OFF');
+        // remoteFeed.data({
+        //     text: data,
+        //     error: function(reason) { alert(reason); },
+        //     success: function() { console.log('Sent successfully!'); },
+        // });
+        vroomHandle.data({
+            text: data,
+            error: function(reason) { alert(reason); },
+            success: function() { console.log('Sent successfully!'); },
+        });
+    };
+
     render() {
         return (
             <div className="App">
@@ -735,7 +750,7 @@ class Room extends React.Component {
                     </div>
                 </header>
                 <div className="center">
-                <ToggleSwitch />
+                <ToggleSwitch onToggle={this.handleToggle} />
                 </div>
                 <h3 id="title"></h3>
                 <Container>

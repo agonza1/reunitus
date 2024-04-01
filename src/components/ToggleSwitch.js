@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import './ToggleSwitch.css'; // Import your custom styles
 
-const ToggleSwitch = () => {
+const ToggleSwitch = ({ onToggle }) => {
   const [checked, setChecked] = useState(false);
 
   const handleClick = () => {
-    setChecked(!checked);
+    const newChecked = !checked;
+    setChecked(newChecked);
+    // Call the onToggle callback function with the new checked state
+    onToggle(newChecked);
   };
 
   return (
