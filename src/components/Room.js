@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { setState } from 'react';
 
 import '../App.css';
 import offline from "../images/offline.jpg";
 import Janus from './Janus';
 import $ from 'jquery';
 import ToggleSwitch from './ToggleSwitch';
+import ChatContainer from './ChatContainer'; 
 import {Container, Row, Col} from 'react-bootstrap'
 
 const server = process.env.REACT_APP_JANUS_URL || "http://localhost:8088/janus";
@@ -28,15 +29,18 @@ let localVideos = 0;
 let remoteTracks = {};
 let bitrateTimer = [], simulcastStarted = {}, svcStarted = {};
 
-class Room extends React.Component {
+
+class Room extends React.Component {   
     state = {
         myroom: 1234,
         subscriber_mode: false,
         use_msid: false,
+        messages: []
     };
 
     constructor(props) {
         super(props);
+        this.displayMessage = this.displayMessage.bind(this);
     }
 
     componentDidMount() {
@@ -45,6 +49,7 @@ class Room extends React.Component {
     }
 
     startJanusServerRoom(myroom, subscriber_mode, use_msid){
+        let dataMessages = this.state.messages || [];
         function publishOwnFeed(useAudio) {
             // Publish our stream
             vroomHandle.createOffer(
@@ -86,7 +91,7 @@ class Room extends React.Component {
                     }
                 });
         }
-
+        // this.displayMessage = this.displayMessage.bind(this);
         let creatingSubscription = false;
         function subscribeTo(sources) {
             // Check if we're still creating the subscription handle
@@ -170,6 +175,7 @@ class Room extends React.Component {
             }
             // If we got here, we're creating a new handle for the subscriptions (we only need one)
             creatingSubscription = true;
+            // this.displayMessage = this.displayMessage.bind(this);
             janusRoom.attach(
                 {
                     plugin: "janus.plugin.videoroom",
@@ -395,9 +401,28 @@ class Room extends React.Component {
                             }
                         }
                     },
-                    ondata: function(data) {
-                        Janus.debug("We got data from the DataChannel!!!!", data);
-                        console.log(data);
+                    ondata: function (data) {
+                        Janus.debug("We got data from the DataChannel!!", data);                    
+                        const newMessage = { text: data, time: new Date().toLocaleTimeString() };
+                        dataMessages.push(newMessage);
+                    
+                        const chatContainer = document.querySelector(".chat-container");
+                        const messageElement = document.createElement("div");
+                        messageElement.classList.add("chat-bubble");
+                        messageElement.classList.add("received");
+                        const messageText = document.createElement("span");
+                        messageText.classList.add("message-text");
+                        messageText.textContent = `Bot: ${newMessage.text} - `;
+                        const messageTime = document.createElement("span");
+                        messageTime.classList.add("message-time");
+                        messageTime.textContent = newMessage.time;
+                        
+                        messageElement.appendChild(messageText);
+                        messageElement.appendChild(messageTime);
+                        chatContainer.appendChild(messageElement);
+                        // Force autoscroll to the bottom of the chat container
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        console.log(dataMessages);
                     },
                     oncleanup: function() {
                         Janus.log(" ::: Got a cleanup notification (remote feed) :::");
@@ -729,6 +754,11 @@ class Room extends React.Component {
             success: function() { console.log('Sent successfully!'); },
         });
     };
+    
+    displayMessage(messageText){
+        const newMessage = { text: messageText, time: new Date().toLocaleTimeString() };
+        this.setState({ messages: [...this.state.messages, newMessage] });
+    };
 
     render() {
         return (
@@ -770,6 +800,7 @@ class Room extends React.Component {
                         </Col>
                     </Row>
                 </Container>
+                <ChatContainer messages={this.state.messages} onSendMessage={this.displayMessage} />
             </div>
         );
     }
